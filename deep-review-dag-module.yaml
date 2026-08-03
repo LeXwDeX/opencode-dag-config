@@ -13,7 +13,7 @@ config:
     required: false
     report_to_parent: false
     worker_config:
-      timeout_ms: 600000
+      timeout_ms: 900000
   nodes:
     # Wave 1: Exploration (parallel)
     - id: explore-core
@@ -230,6 +230,12 @@ config:
       worker_type: general
       depends_on: [review-architecture, review-logic, review-style, review-testability, review-robustness]
       required: true
+      # Sequential aggregator: consumes every reviewer report and re-checks claims
+      # against source. Reviewer lanes run in parallel; this lane alone needs 3x
+      # the default budget (recurring 600s timeouts observed on real reviews).
+      # Budgets must be sized to the actual task load — never trust defaults blindly.
+      worker_config:
+        timeout_ms: 1800000
       output_schema:
         type: object
         required: [verdict, verified_claims, disputed_findings_resolution, critical_findings_status, coverage_gaps, evidence_quality]
