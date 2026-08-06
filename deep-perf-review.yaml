@@ -55,7 +55,7 @@ config:
     required: false
     report_to_parent: false
     worker_config:
-      timeout_ms: 900000
+      timeout_ms: 1800000
   nodes:
     - id: explore-perf
       name: "Performance Surface Mapping"

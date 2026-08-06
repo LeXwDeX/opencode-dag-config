@@ -6,7 +6,7 @@ config:
   node_defaults:
     report_to_parent: false
     worker_config:
-      timeout_ms: 600000
+      timeout_ms: 1800000
   nodes:
     - id: explore-dag
       name: explore-dag

@@ -5,7 +5,7 @@ config:
   max_node_replan_attempts: 3
   node_defaults:
     worker_config:
-      timeout_ms: 600000
+      timeout_ms: 1800000
   nodes:
     - id: review-concurrency
       name: "Concurrency & Resource Leaks"
