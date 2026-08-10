@@ -1,0 +1,51 @@
+title: "Bug repair: reproduce → diagnose → repair → verify → review"
+config:
+  name: debug-repair-route
+  max_concurrency: 3
+  max_node_replan_attempts: 3
+  max_total_nodes: 18
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Reproduce the confirmed bug, establish an evidence-backed root cause,
+    implement the narrowest safe repair, and prove it with a regression check.
+  blocks:
+    - id: root-cause
+      kind: debug
+      skills: [diagnosing-bugs]
+      instruction: >-
+        Start from the exact reported symptom. Rank falsifiable hypotheses,
+        distinguish cause from correlated damage, and retain commands, logs, and
+        file references needed to reproduce the diagnosis.
+
+    - id: repair
+      kind: coding
+      depends_on: [root-cause]
+      skills: [tdd]
+      instruction: >-
+        Add a failing regression check for the established cause, implement only
+        the minimal production repair, and avoid unrelated cleanup.
+
+    - id: regression-checks
+      kind: verify
+      depends_on: [repair]
+      instruction: >-
+        Re-run the original reproduction, the focused regression check, and the
+        affected package gates. State whether the causal hypothesis was falsified
+        or supported by the result.
+
+    - id: repair-decision
+      kind: review
+      depends_on: [regression-checks]
+      skills: [code-review]
+      instruction: >-
+        Check that the diff addresses the proven cause, the regression test would
+        fail without the fix, and no broader behavior changed without evidence.
+
+    - id: repair-report
+      kind: synthesize
+      depends_on: [repair-decision]
+      instruction: >-
+        Summarize symptom, root cause, repaired boundary, regression evidence, and
+        remaining uncertainty.

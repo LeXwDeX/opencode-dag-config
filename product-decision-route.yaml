@@ -1,0 +1,57 @@
+# The parent completes the one-confirmation decision brief before starting this
+# route. Child blocks investigate and compare; they never ask the user questions.
+title: "Product decision: evidence → alternatives → review → proposal"
+config:
+  name: product-decision-route
+  max_concurrency: 4
+  max_node_replan_attempts: 2
+  max_total_nodes: 18
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Turn the confirmed product or architecture question into an evidence-backed
+    recommendation with explicit tradeoffs, failure modes, and acceptance rules.
+  blocks:
+    - id: product-evidence
+      kind: explore
+      instruction: >-
+        Map user-visible goals, current behavior, constraints, non-goals, and the
+        evidence behind each assumption. Mark facts that the repository cannot
+        establish rather than inventing them.
+
+    - id: architecture-evidence
+      kind: explore
+      instruction: >-
+        Map current module ownership, interfaces, state transitions, operational
+        constraints, and irreversible decisions relevant to the confirmed brief.
+
+    - id: recommended-option
+      kind: plan
+      depends_on: [product-evidence, architecture-evidence]
+      instruction: >-
+        Design the smallest coherent recommended option. Include boundary choices,
+        migration path, acceptance evidence, failure handling, and falsifiers.
+
+    - id: strongest-alternative
+      kind: plan
+      depends_on: [product-evidence, architecture-evidence]
+      instruction: >-
+        Develop the strongest materially different alternative. State where it is
+        superior, its new costs, and the evidence that would reverse the recommendation.
+
+    - id: decision
+      kind: review
+      depends_on: [recommended-option, strongest-alternative]
+      instruction: >-
+        Stress-test both options against the confirmed scope, contradictions,
+        boundary cases, ownership, reversibility, and evidence quality. Do not
+        reward an option merely for being more detailed.
+
+    - id: proposal
+      kind: synthesize
+      depends_on: [decision]
+      instruction: >-
+        Produce a decision record with the selected option, rejected alternative,
+        rationale, invariants, rollout or migration stages, acceptance checks, and
+        residual risks.
