@@ -20,6 +20,11 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 先在父对话输出推荐答案并完成一次合并确认；确认结果写进 `objective` 和
 `instruction`，不得把用户问答放到子节点。
 
+推荐调用顺序：先用 `workflow(action="list")` 选路线，再用
+`workflow(action="read", spec_path="<route>")` 读取结构；父对话重定向后把
+结果作为 inline `spec` 启动。只有模板目标已经与当前任务完全一致时，才直接
+用 `spec_path` 启动。
+
 积木模板依赖主仓库引入 composable workflow blocks 的版本。合并或发布本仓库
 中的 `blocks` 模板前，应先确认对应运行时版本已上线；旧版本仍可使用现有
 `nodes` 模板。
