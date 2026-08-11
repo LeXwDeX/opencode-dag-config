@@ -15,6 +15,15 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 持久化、调度和恢复机制。需要自定义绑定、条件、输出 Schema 或深度 diff
 审查元数据时，现有 `nodes` 模板仍是低层逃生口。
 
+每个积木都由运行时生命周期契约和本仓库的专项 `instruction` 共同定义，
+不读取或依赖用户环境中的 Skill。`kind` 控制编译与门禁，`id` 表达
+`codebase-design`、`global-review` 等产品能力。例如已经具备仓库证据的设计
+交付任务使用 `design-delivery-route.yaml`：
+
+```text
+codebase-design → coding → verify → global-review → delivery-report
+```
+
 路线模板是可复用拓扑，不是固定脚本：父对话必须把目标、真实工作包、写集和
 验收证据重定向到当前任务，并删掉已有证据覆盖的积木。产品选择或高影响决策
 先在父对话输出推荐答案并完成一次合并确认；确认结果写进 `objective` 和
@@ -28,6 +37,9 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 积木模板依赖主仓库引入 composable workflow blocks 的版本。合并或发布本仓库
 中的 `blocks` 模板前，应先确认对应运行时版本已上线；旧版本仍可使用现有
 `nodes` 模板。
+
+方法论来源和 MIT 许可记录见 `THIRD_PARTY_NOTICES.md`；上游名称只用于来源
+追踪，不是本产品的积木字段或功能名称。
 
 ## 安装（本地使用）
 

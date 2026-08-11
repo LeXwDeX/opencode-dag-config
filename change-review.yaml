@@ -27,8 +27,9 @@ config:
     - id: decision
       kind: review
       depends_on: [survey, verify]
-      skills: [code-review]
       instruction: >-
-        Treat failing required checks as blockers. Drop findings without a
-        specific code or command reference, deduplicate overlaps, and distinguish
-        merge blockers from optional improvements.
+        Review the bounded diff on independent Standards and Intent axes. Treat
+        failing required checks as blockers, bind findings to the verified
+        implementation state, drop claims without a specific code or command
+        reference, deduplicate overlaps, and distinguish merge blockers from
+        optional improvements.

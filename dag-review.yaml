@@ -15,7 +15,25 @@ config:
       worker_type: explore
       depends_on: []
       prompt_template:
-        id: code-explore
+        inline: &explorer-prompt |
+          # Role: Code Explorer (read-only)
+
+          Inspect the supplied target without modifying files. Prefer semantic
+          symbol and call-graph tools, then text search when unavailable. Map
+          responsibilities, entry points, call relationships, ownership,
+          invariants, and risk areas. Every claim must cite a verified
+          `path/file.ext:line`; unverified or absent items belong under
+          `not_found`, never findings.
+
+          ## Target
+
+          {{target}}
+
+          ## Output
+
+          Return a concise hit summary, key symbols, call relationships,
+          observed invariants, risk areas, and `not_found`. Do not speculate
+          about fixes; downstream reviewers own judgment.
         input:
           target: "packages/opencode/src/dag core lifecycle files: dag.ts, config.ts, model.ts, admission.ts, review-lifecycle.ts. Map workflow state machine transitions, locking strategy (withWorkflowLock), node lifecycle (spawn/complete/fail/cancel/pause/resume/step), config normalization, model resolution, and admission QA protocol. Identify state ownership, concurrency guards, and cross-module contracts."
 
@@ -24,7 +42,7 @@ config:
       worker_type: explore
       depends_on: []
       prompt_template:
-        id: code-explore
+        inline: *explorer-prompt
         input:
           target: "packages/opencode/src/dag/runtime execution engine: loop.ts (scheduling loop, layer computation, concurrency control), spawn.ts (child session creation), recovery.ts (crash recovery, reconciliation), eval.ts (condition evaluation, input mapping), capture.ts (output schema validation, submit_result), summary-publisher.ts (event emission). Map the scheduling algorithm, session lifecycle, error propagation, and recovery invariants."
 
@@ -33,7 +51,7 @@ config:
       worker_type: explore
       depends_on: []
       prompt_template:
-        id: code-explore
+        inline: *explorer-prompt
         input:
           target: "packages/opencode/src/dag/templates template system: resolve.ts (template resolution, rendering, interpolation) and sanitize.ts (input sanitization, injection prevention). Map template loading (by ID from .opencode/dag-prompts, inline), variable interpolation mechanics, and the sanitization boundary. Identify trust assumptions and injection vectors."
 
@@ -42,21 +60,58 @@ config:
       worker_type: review
       depends_on: [explore-core, explore-runtime, explore-templates]
       prompt_template:
-        id: review-arch
+        inline: |
+          # Architecture Review (read-only)
+
+          Review structural soundness only: module boundaries, dependency
+          direction, state ownership, hidden invariants, failure ownership, and
+          extension cost. Correctness and style belong to sibling lanes.
+
+          Every finding must cite `path/file.ext:line` personally verified in
+          this session. Put claims that cannot be verified under
+          `unverified_claims`. Report a finding for competing sources of truth,
+          boundary reach-through, inverted dependencies, convention-only
+          invariants that fail silently, or ownerless partial-failure paths.
+          Separate material findings from optional directions and never modify
+          files.
 
     - id: review-logic
       name: review-logic
       worker_type: review
       depends_on: [explore-core, explore-runtime, explore-templates]
       prompt_template:
-        id: review-logic
+        inline: |
+          # Correctness Review (read-only)
+
+          Review behavioral correctness only: reachable boundary conditions,
+          error paths, concurrency, state transitions, and contract
+          preservation. Architecture and style belong to sibling lanes.
+
+          Every finding must cite `path/file.ext:line` personally verified in
+          this session. Put claims that cannot be verified under
+          `unverified_claims`. Check empty/null/zero/overflow boundaries,
+          swallowed errors, non-atomic check-then-act paths, incomplete caller
+          migrations, and state-machine holes. State the trigger and impact for
+          every finding and never modify files.
 
     - id: review-style
       name: review-style
       worker_type: review
       depends_on: [explore-core, explore-runtime, explore-templates]
       prompt_template:
-        id: review-style
+        inline: |
+          # Standards Review (read-only)
+
+          Review conformance to documented repository standards and the
+          dominant surrounding-code idiom. Architecture and correctness belong
+          to sibling lanes.
+
+          Ground every finding in a cited rule or a contrasting
+          `path/file.ext:line` example; personal taste is not a finding. Check
+          import discipline, control-flow conventions, naming, dead or debug
+          residue, comment noise, and missing explanations for non-obvious
+          constraints. Put unverified claims in `unverified_claims`, distinguish
+          required actions from suggestions, and never modify files.
 
     - id: verify-claims
       name: verify-claims
