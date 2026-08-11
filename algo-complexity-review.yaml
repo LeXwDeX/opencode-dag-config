@@ -4,8 +4,9 @@ config:
   name: algo-complexity-review
   max_concurrency: 6
   max_node_replan_attempts: 2
-  worker_config:
-    timeout_ms: 1800000
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
   nodes:
 
     # ============================================================

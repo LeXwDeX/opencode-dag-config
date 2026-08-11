@@ -1,0 +1,58 @@
+# Use when repository evidence and the product brief are already confirmed.
+# Add explore or prototype blocks only when the current objective still has an
+# evidence gap or a runnable uncertainty.
+title: "Confirmed design delivery: codebase design → coding → verify → global review"
+config:
+  name: design-delivery-route
+  max_concurrency: 3
+  max_node_replan_attempts: 3
+  max_total_nodes: 18
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Convert the confirmed repository evidence and product brief into a deep
+    codebase design, implement it through observable checks, verify every
+    acceptance criterion, and make one evidence-backed whole-change decision.
+  blocks:
+    - id: codebase-design
+      kind: plan
+      instruction: >-
+        Define the owning module and narrow interface that hides the most
+        complexity. Use the repository's domain language, identify state and
+        lifecycle invariants, specify migration boundaries and disjoint write
+        sets, and attach acceptance evidence and falsifiers to every package.
+
+    - id: coding
+      kind: coding
+      depends_on: [codebase-design]
+      instruction: >-
+        Implement the confirmed design in the bounded write set. Establish a
+        failing observable check first where a test seam exists, return it to
+        green with the smallest production change, and refactor only under the
+        passing check. Stop and report interface or ownership drift.
+
+    - id: verify
+      kind: verify
+      depends_on: [coding]
+      instruction: >-
+        Run the focused regression checks and every documented gate required by
+        the affected packages. Bind commands and results to the implementation
+        fingerprint; missing evidence or a failed required check is FAIL.
+
+    - id: global-review
+      kind: review
+      depends_on: [verify]
+      instruction: >-
+        Review the complete implementation on independent Standards and Intent
+        axes. Check deep-module ownership, correctness, repository conventions,
+        generated artifacts, and verification evidence separately from scope,
+        acceptance criteria, and user-visible behavior. Reject unsupported or
+        stale claims.
+
+    - id: delivery-report
+      kind: synthesize
+      depends_on: [global-review]
+      instruction: >-
+        Report the selected design, changed boundaries, exact verification
+        evidence, review verdict, residual risks, and deliberately deferred work.
