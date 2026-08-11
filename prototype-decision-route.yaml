@@ -1,4 +1,4 @@
-title: "Prototype detour: evidence → experiments → production plan"
+title: "Prototype detour: evidence → experiments → plan → verify → review"
 config:
   name: prototype-decision-route
   max_concurrency: 3
@@ -38,9 +38,17 @@ config:
         Separate observations from inference, discard prototype shortcuts, and
         propose production boundaries, migration steps, tests, and stop criteria.
 
+    - id: experiment-checks
+      kind: verify
+      depends_on: [production-plan]
+      instruction: >-
+        Re-run the falsifying signals from both experiments, bind observations
+        to their exact fingerprints, and fail if the production plan relies on
+        an unsupported or stale claim.
+
     - id: plan-decision
       kind: review
-      depends_on: [production-plan]
+      depends_on: [experiment-checks]
       instruction: >-
         Verify that the plan follows from experiment evidence, does not promote
         throwaway code implicitly, and exposes unresolved risks and falsifiers.

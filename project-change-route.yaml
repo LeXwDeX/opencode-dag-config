@@ -1,6 +1,6 @@
 # Reference route. The parent retargets coding blocks to real disjoint write
 # sets and removes blocks whose evidence is already satisfied before start.
-title: "Project change: explore → plan → build → verify → review"
+title: "Project change: evidence → codebase design → coding → verify → global review"
 config:
   name: project-change-route
   max_concurrency: 4
@@ -20,38 +20,40 @@ config:
         tests, and integration seams. Resolve discoverable facts and identify
         only runnable or user-owned uncertainties.
 
-    - id: implementation-contract
+    - id: codebase-design
       kind: plan
       depends_on: [map-existing]
       instruction: >-
-        Turn the confirmed brief into the smallest implementation path. Define
-        disjoint write sets, dependency order, interface contracts, acceptance
-        checks, rollback concerns, and the evidence each package must return.
+        Turn the confirmed brief into the smallest deep design: place behavior
+        behind a narrow owning interface, use the repository's domain language,
+        and define disjoint write sets, dependency order, migration boundaries,
+        acceptance checks, falsifiers, and the evidence each package returns.
 
     - id: production-slice
       kind: coding
-      depends_on: [implementation-contract]
-      skills: [tdd]
+      depends_on: [codebase-design]
       instruction: >-
-        Own only the retargeted production write set. Work test-first where the
-        repository permits it and stop if another block owns the same files.
+        Own only the retargeted production write set. Establish a failing
+        observable check before production changes when a test seam exists,
+        return it to green, refactor under that check, and stop if another block
+        owns the same files.
 
     - id: integration-slice
       kind: coding
-      depends_on: [implementation-contract]
-      skills: [tdd]
+      depends_on: [codebase-design]
       instruction: >-
         Own only the retargeted integration or consumer write set. Preserve the
-        planned interfaces and report any contract drift instead of redesigning
-        another block's module.
+        planned interfaces, test observable consumer behavior before changing
+        it, and report contract drift instead of redesigning another block's
+        module.
 
     - id: acceptance-slice
       kind: coding
-      depends_on: [implementation-contract]
-      skills: [tdd]
+      depends_on: [codebase-design]
       instruction: >-
         Own the independent acceptance-test write set. Test observable behavior
-        and failure paths without duplicating implementation logic.
+        and failure paths first without duplicating implementation logic; keep
+        the checks red until the corresponding production behavior exists.
 
     - id: project-checks
       kind: verify
@@ -60,18 +62,19 @@ config:
         Run the smallest complete documented gate set for every affected package,
         including generated-artifact or contract checks when applicable.
 
-    - id: delivery-decision
+    - id: global-review
       kind: review
       depends_on: [project-checks]
-      skills: [code-review]
       instruction: >-
-        Verify both repository standards and the confirmed acceptance criteria.
-        Treat unsupported claims, overlapping writes, stale generated output, and
-        failing required checks as material findings.
+        Review the entire changed surface on independent Standards and Intent
+        axes. Verify repository architecture, correctness, and generated-output
+        rules separately from the confirmed goal and acceptance criteria. Treat
+        unsupported claims, overlapping writes, stale evidence, and failing
+        required checks as material findings.
 
     - id: delivery-report
       kind: synthesize
-      depends_on: [delivery-decision]
+      depends_on: [global-review]
       instruction: >-
         Report changed modules, exact checks and results, acceptance coverage,
         residual risks, and any follow-up that was deliberately left out.

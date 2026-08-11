@@ -1,0 +1,51 @@
+name: Validate DAG templates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: compat
+        name: Read runtime compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs")
+            const compat = JSON.parse(fs.readFileSync("runtime-compat.json", "utf8"))
+            if (compat.pending_backfill) {
+              console.error(`::error::${compat.pending_backfill}`)
+              process.exit(1)
+            }
+            if (!/^[0-9a-f]{40}$/.test(compat.runtime_commit ?? "")) {
+              console.error("::error::runtime_commit must be a full 40-character SHA")
+              process.exit(1)
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `repo=${compat.runtime_repo}\nsha=${compat.runtime_commit}\n`)
+          '
+
+      - name: Check out compatible runtime
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.compat.outputs.repo }}
+          ref: ${{ steps.compat.outputs.sha }}
+          path: runtime
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install runtime dependencies
+        working-directory: runtime
+        run: bun install --frozen-lockfile
+
+      - name: Validate every root workflow YAML
+        working-directory: runtime/packages/opencode
+        run: bun script/validate-dag-templates.ts "$GITHUB_WORKSPACE"
