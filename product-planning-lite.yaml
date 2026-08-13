@@ -1,0 +1,42 @@
+# Lightweight reference for a bounded, reversible product decision.
+title: "Product planning (lite): brief → option → decision"
+config:
+  name: product-planning-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Turn a bounded product request into one concise, testable product decision.
+  blocks:
+    - id: product-briefing
+      kind: explore
+      instruction: >-
+        Confirm the user, problem, current behavior, desired outcome, constraints,
+        evidence, and user-owned decision. Stop if the request hides a high-impact
+        or irreversible choice that requires the full route.
+
+    - id: product-proposal
+      kind: plan
+      depends_on: [product-briefing]
+      instruction: >-
+        Recommend the smallest reversible option and one credible alternative.
+        State scope, non-goals, acceptance checks, measurement, main assumption,
+        and rollback.
+
+    - id: product-check
+      kind: review
+      depends_on: [product-proposal]
+      instruction: >-
+        Verify that the recommendation solves the confirmed problem, is supported
+        by available evidence, and exposes rather than guesses the remaining
+        user-owned decision.
+
+    - id: product-summary
+      kind: synthesize
+      depends_on: [product-check]
+      instruction: >-
+        Return a one-page product decision with outcome, scope, non-goals,
+        acceptance criteria, measurement, risks, and next delivery action.

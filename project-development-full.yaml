@@ -1,0 +1,78 @@
+# Full reference for a multi-module or release-relevant project change.
+title: "Project development (full): evidence → design → parallel slices → gates → review"
+config:
+  name: project-development-full
+  max_concurrency: 4
+  max_node_replan_attempts: 3
+  max_total_nodes: 24
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Deliver the confirmed change through disjoint implementation slices,
+    behavior-first checks, deterministic gates, and whole-change review.
+  blocks:
+    - id: development-map
+      kind: explore
+      instruction: >-
+        Map current behavior, repository rules, owning modules, callers,
+        integration seams, tests, generated artifacts, migrations, and delivery
+        gates. Resolve discoverable facts before proposing work packages.
+
+    - id: development-plan
+      kind: plan
+      depends_on: [development-map]
+      instruction: >-
+        Define the smallest owning interfaces, dependency order, disjoint write
+        sets, public test seams, acceptance criteria, falsifiers, rollout, and
+        evidence returned by each package. Keep human confirmation at the parent
+        for high-impact product choices.
+
+    - id: production-slice
+      kind: coding
+      depends_on: [development-plan]
+      instruction: >-
+        Implement only the assigned production write set. Establish a failing
+        behavior check at the public seam, make the smallest change to pass it,
+        and stop on ownership or interface drift.
+
+    - id: integration-slice
+      kind: coding
+      depends_on: [development-plan]
+      instruction: >-
+        Implement only the assigned consumer, migration, generated-artifact, or
+        delivery wiring. Preserve the planned interface and report contract drift
+        instead of redesigning another slice.
+
+    - id: acceptance-slice
+      kind: coding
+      depends_on: [development-plan]
+      instruction: >-
+        Own independent behavioral acceptance checks and failure paths. Test the
+        real public implementation without duplicating production logic or
+        weakening assertions to match incomplete behavior.
+
+    - id: development-gates
+      kind: verify
+      depends_on: [production-slice, integration-slice, acceptance-slice]
+      instruction: >-
+        Run focused checks and every documented gate for affected packages,
+        including frozen install, typecheck, generated outputs, migrations,
+        contracts, unit/integration/E2E, packaging, and security checks when
+        triggered. Bind results to the exact HEAD fingerprint.
+
+    - id: development-review
+      kind: review
+      depends_on: [development-gates]
+      instruction: >-
+        Review the complete change on separate Standards, Intent, and triggered
+        risk axes. Verify user-visible behavior, architecture rules, test
+        sensitivity, generated outputs, migrations, and residual risks. A failed
+        required gate or stale evidence blocks delivery.
+
+    - id: development-report
+      kind: synthesize
+      depends_on: [development-review]
+      instruction: >-
+        Report changed modules, behavior, exact checks and results, acceptance
+        coverage, review verdicts, rollout, rollback, and deliberately deferred work.

@@ -1,0 +1,76 @@
+# Full reference for uncertain or high-impact product work. The parent confirms
+# the user-owned decision brief before start; child blocks do not ask questions.
+title: "Product planning (full): evidence → alternatives → prototype → product brief"
+config:
+  name: product-planning-full
+  max_concurrency: 3
+  max_node_replan_attempts: 3
+  max_total_nodes: 20
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Produce a decision-ready product brief from verified user, market, product,
+    and delivery evidence, using prototypes only for material uncertainties.
+  blocks:
+    - id: problem-evidence
+      kind: explore
+      instruction: >-
+        Establish the user, job, current workaround, pain, frequency, stakes,
+        desired outcome, and evidence quality. Separate observed facts from
+        assumptions and identify only decisions that remain user-owned.
+
+    - id: product-context
+      kind: explore
+      instruction: >-
+        Map current product behavior, adjacent capabilities, constraints,
+        analytics or feedback, affected journeys, terminology, and prior
+        decisions. Cite concrete documents, screens, events, or repository paths.
+
+    - id: delivery-context
+      kind: explore
+      instruction: >-
+        Map technical, operational, security, compliance, rollout, migration,
+        support, and measurement constraints that can change the product choice.
+        Do not turn implementation preferences into product requirements.
+
+    - id: product-options
+      kind: plan
+      depends_on: [problem-evidence, product-context, delivery-context]
+      instruction: >-
+        Form two or three materially different options, including the smallest
+        viable option and the option to defer. For each, state user value,
+        scope, exclusions, risks, reversibility, measurement, evidence, and the
+        falsifiable assumption that most threatens the recommendation.
+
+    - id: uncertainty-prototype
+      kind: prototype
+      depends_on: [product-options]
+      instruction: >-
+        Prototype only the highest-value runnable uncertainty. Use the cheapest
+        reversible artifact that can change the decision, define the prediction
+        before building, and return evidence rather than production code.
+
+    - id: product-validation
+      kind: verify
+      depends_on: [uncertainty-prototype]
+      instruction: >-
+        Check the proposed option against the confirmed problem, prototype
+        evidence, constraints, edge journeys, success measures, rollback, and
+        explicit non-goals. Mark unsupported acceptance criteria as gaps.
+
+    - id: product-decision
+      kind: review
+      depends_on: [product-validation]
+      instruction: >-
+        Make one evidence-backed recommendation. Distinguish facts, inferences,
+        assumptions, and user-owned decisions; reject options whose value or
+        feasibility depends on evidence the route did not establish.
+
+    - id: product-brief
+      kind: synthesize
+      depends_on: [product-decision]
+      instruction: >-
+        Write the final product brief: problem, users, outcome, recommended
+        scope, non-goals, journeys, acceptance criteria, measurement, rollout,
+        risks, open decisions, evidence links, and smallest next delivery slice.

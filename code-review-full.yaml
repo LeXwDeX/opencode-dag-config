@@ -1,0 +1,73 @@
+# Full reference for a release, large PR, or cross-module change. Evidence lanes
+# remain independent; the final review is the only decision gate.
+title: "Code review (full): fixed point → independent evidence → gates → decision"
+config:
+  name: code-review-full
+  max_concurrency: 4
+  max_node_replan_attempts: 3
+  max_total_nodes: 18
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Review a pinned change independently for repository standards, confirmed
+    intent, correctness, and operational risk, then return one auditable verdict.
+  blocks:
+    - id: pin-review
+      kind: explore
+      instruction: >-
+        Resolve the parent-supplied fixed point to a full SHA, record HEAD, the
+        three-dot diff and commits, originating spec, standards sources, touched
+        modules, generated outputs, and required checks. Fail on an invalid ref,
+        empty diff, missing intent, or fingerprint drift.
+
+    - id: standards-evidence
+      kind: explore
+      depends_on: [pin-review]
+      instruction: >-
+        Independently assess every changed hunk against documented repository
+        standards and material maintainability smells. Cite the exact rule and
+        file:line, separate hard violations from judgement calls, and skip rules
+        already decided by tooling.
+
+    - id: intent-evidence
+      kind: explore
+      depends_on: [pin-review]
+      instruction: >-
+        Independently compare the complete changed behavior with the originating
+        request and acceptance criteria. Identify missing, partial, incorrect,
+        and unrequested behavior with spec and file evidence.
+
+    - id: correctness-evidence
+      kind: explore
+      depends_on: [pin-review]
+      instruction: >-
+        Trace changed callers, state, errors, concurrency, persistence, recovery,
+        security-sensitive paths, and user-visible consumers. Report only claims
+        supported by a trigger and concrete file or runtime evidence.
+
+    - id: review-gates
+      kind: verify
+      depends_on: [pin-review]
+      instruction: >-
+        Run all documented checks triggered by the diff, including typecheck,
+        tests, generated outputs, migrations, contracts, packaging, and security
+        checks. Record exact commands, raw failures, and HEAD fingerprint; do not fix.
+
+    - id: whole-change-decision
+      kind: review
+      depends_on: [standards-evidence, intent-evidence, correctness-evidence, review-gates]
+      instruction: >-
+        Verify and deduplicate claims without allowing one axis to mask another.
+        Classify introduced, pre-existing, newly exposed, spec, and test gaps;
+        distinguish blockers from optional improvements and reject stale or
+        unsupported findings. Return separate Standards, Intent, Correctness,
+        and required-check verdicts plus the overall delivery decision.
+
+    - id: review-report
+      kind: synthesize
+      depends_on: [whole-change-decision]
+      instruction: >-
+        Report fixed point, HEAD, commits, scope, checks, per-axis verdicts,
+        verified findings with evidence and priority, refuted claims, residual
+        risks, and the exact next delivery action.

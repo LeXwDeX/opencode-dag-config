@@ -1,0 +1,59 @@
+# Full reference for an intermittent, cross-module, or high-impact defect.
+title: "Debug and repair (full): feedback loop → hypotheses → fix → regression proof"
+config:
+  name: debug-repair-full
+  max_concurrency: 2
+  max_node_replan_attempts: 3
+  max_total_nodes: 18
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Reproduce the exact defect, prove one root cause, implement the narrowest
+    repair, and lock the behavior with a sensitive regression check.
+  blocks:
+    - id: reproduce-defect
+      kind: debug
+      instruction: >-
+        Build one fast, deterministic, agent-runnable feedback loop for the exact
+        user symptom. Reproduce it, preserve redacted evidence, minimize the case,
+        and stop if the loop cannot distinguish this defect from nearby failures.
+
+    - id: test-hypotheses
+      kind: debug
+      depends_on: [reproduce-defect]
+      instruction: >-
+        Rank three to five falsifiable hypotheses. Instrument only seams that
+        distinguish their predictions, change one variable at a time, remove
+        refuted explanations, and establish one evidence-backed root cause.
+
+    - id: repair-defect
+      kind: coding
+      depends_on: [test-hypotheses]
+      instruction: >-
+        Convert the minimized reproduction into a failing public regression test,
+        implement the smallest causal repair, return the test to green, and
+        remove tagged instrumentation and throwaway artifacts.
+
+    - id: verify-repair
+      kind: verify
+      depends_on: [repair-defect]
+      instruction: >-
+        Re-run the original reproduction, minimized regression, affected package
+        gates, and relevant failure paths. Demonstrate that reverting the causal
+        change makes the regression red when safe to do so.
+
+    - id: review-repair
+      kind: review
+      depends_on: [verify-repair]
+      instruction: >-
+        Check that the change addresses the proven cause, the test observes real
+        behavior, no assertion or error was weakened, and no broader behavior or
+        architecture work entered without evidence.
+
+    - id: repair-report
+      kind: synthesize
+      depends_on: [review-repair]
+      instruction: >-
+        Report symptom, feedback loop, root cause, repaired seam, regression and
+        mutation evidence, exact gates, remaining uncertainty, and prevention action.
