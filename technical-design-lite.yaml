@@ -1,0 +1,41 @@
+# Lightweight reference for a local, reversible technical design.
+title: "Technical design (lite): map → design → review"
+config:
+  name: technical-design-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Define the smallest correct interface and implementation plan for a bounded change.
+  blocks:
+    - id: design-map
+      kind: explore
+      instruction: >-
+        Map current behavior, owning module, callers, invariants, tests, and the
+        one material risk. Escalate to the full route for migration, durable
+        state, concurrency, security, or multiple competing authorities.
+
+    - id: bounded-design
+      kind: plan
+      depends_on: [design-map]
+      instruction: >-
+        Specify the narrow owning interface, behavior, errors, write set,
+        acceptance seam, and smallest implementation sequence. Avoid new
+        abstractions unless they hide complexity from more than one caller.
+
+    - id: bounded-design-review
+      kind: review
+      depends_on: [bounded-design]
+      instruction: >-
+        Check correctness, repository fit, change locality, scope, and whether
+        callers remain free of internal ordering and persistence knowledge.
+
+    - id: bounded-design-summary
+      kind: synthesize
+      depends_on: [bounded-design-review]
+      instruction: >-
+        Return the interface decision, file ownership, acceptance check, risks,
+        and implementation order.

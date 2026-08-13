@@ -1,0 +1,33 @@
+# Lightweight reference for a deterministic, bounded defect.
+title: "Debug and repair (lite): reproduce → fix → verify"
+config:
+  name: debug-repair-lite
+  max_concurrency: 1
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Repair one reproducible defect through a minimal causal patch and regression check.
+  blocks:
+    - id: lite-reproduce
+      kind: debug
+      instruction: >-
+        Reproduce and minimize the exact symptom with one deterministic command.
+        Establish the causal boundary; escalate to the full route if hypotheses,
+        concurrency, production-only state, or multiple modules remain unresolved.
+
+    - id: lite-repair
+      kind: coding
+      depends_on: [lite-reproduce]
+      instruction: >-
+        Add the failing regression at the real seam, implement only the proven
+        fix, make the check pass, and avoid unrelated cleanup.
+
+    - id: lite-repair-verify
+      kind: verify
+      depends_on: [lite-repair]
+      instruction: >-
+        Re-run the original symptom, regression check, and affected package gate.
+        Record cause, commands, results, and residual uncertainty.
