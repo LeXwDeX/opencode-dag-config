@@ -44,10 +44,7 @@ jobs:
 
       - name: Install runtime dependencies
         working-directory: runtime
-        # Match the runtime repository's canonical Linux setup action. The
-        # exact source remains pinned by runtime_commit above; the runtime
-        # itself currently installs without --frozen-lockfile.
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Validate every root workflow YAML
         working-directory: runtime/packages/opencode

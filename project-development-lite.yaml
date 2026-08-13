@@ -1,0 +1,40 @@
+# Lightweight reference for one bounded module and one write owner.
+title: "Project development (lite): plan → code → verify → review"
+config:
+  name: project-development-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 12
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Implement a bounded, confirmed change with one behavior check and the required package gates.
+  blocks:
+    - id: lite-development-plan
+      kind: plan
+      instruction: >-
+        Confirm current behavior, one owning module, bounded files, acceptance
+        seam, required gates, and non-goals. Escalate to the full route if the
+        change needs parallel writers, migration, cross-module design, or release work.
+
+    - id: lite-development-code
+      kind: coding
+      depends_on: [lite-development-plan]
+      instruction: >-
+        Make a public behavior check fail, implement the smallest scoped change,
+        make it pass, and avoid unrelated cleanup or speculative abstractions.
+
+    - id: lite-development-verify
+      kind: verify
+      depends_on: [lite-development-code]
+      instruction: >-
+        Run the focused check, affected package typecheck, and every documented
+        gate triggered by the changed files. Record exact commands and results.
+
+    - id: lite-development-review
+      kind: review
+      depends_on: [lite-development-verify]
+      instruction: >-
+        Check the diff against repository standards, confirmed intent, test
+        sensitivity, and user-visible behavior. Report blockers and residual risk.
