@@ -1,0 +1,58 @@
+# Lightweight read-only reference for one reported regression or hot path.
+title: "Performance audit (lite): baseline → inspect → measure"
+config:
+  name: performance-audit-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Verify one bounded performance concern against a repeatable user-relevant baseline.
+  blocks:
+    - id: lite-performance-baseline
+      kind: explore
+      instruction: >-
+        Define the exact workload, environment, metric, threshold, and repeatable
+        command. Record subsystem spread, saturation behavior, memory growth,
+        and competing hypotheses.
+
+    - id: lite-performance-gate
+      kind: review
+      depends_on: [lite-performance-baseline]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: lite-performance-measure
+      kind: verify
+      depends_on: [lite-performance-gate]
+      instruction: >-
+        Inspect the reachable hot path and run the smallest controlled benchmark
+        or profile. Record raw measurements, variance, resource counters, and the
+        implementation path that explains the cost.
+
+    - id: lite-performance-decision
+      kind: review
+      depends_on: [lite-performance-measure]
+      instruction: >-
+        Decide whether the concern is reproduced and material. Separate a
+        verified bottleneck from measurement noise, scale limit, correctness bug,
+        and unsupported optimization idea.
+
+    - id: lite-performance-report
+      kind: synthesize
+      depends_on: [lite-performance-decision]
+      instruction: >-
+        Return baseline, measurements, root cause or refutation, expected impact,
+        smallest next fix, and regression benchmark. DELIVERY CONTRACT: write
+        the complete final report to a temporary markdown file under
+        ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory if
+        missing), named lite-performance-report.md, and
+        verify the file is non-empty. Then submit ONLY that absolute file-path
+        string as your output; do not include the report body or any other text.

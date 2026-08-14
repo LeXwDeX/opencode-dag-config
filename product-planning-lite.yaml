@@ -1,0 +1,59 @@
+# Lightweight reference for a bounded, reversible product decision.
+title: "Product planning (lite): brief → option → decision"
+config:
+  name: product-planning-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Turn a bounded product request into one concise, testable product decision.
+  blocks:
+    - id: product-briefing
+      kind: explore
+      instruction: >-
+        Confirm the user, problem, current behavior, desired outcome, constraints,
+        evidence, and user-owned decision. Record any high-impact or irreversible
+        choice without resolving it.
+
+    - id: product-lite-gate
+      kind: review
+      depends_on: [product-briefing]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: product-proposal
+      kind: plan
+      depends_on: [product-lite-gate]
+      instruction: >-
+        Recommend the smallest reversible option and one credible alternative.
+        State scope, non-goals, acceptance checks, measurement, main assumption,
+        and rollback.
+
+    - id: product-check
+      kind: review
+      depends_on: [product-proposal]
+      instruction: >-
+        Verify that the recommendation solves the confirmed problem, is supported
+        by available evidence, and exposes rather than guesses the remaining
+        user-owned decision.
+
+    - id: product-summary
+      kind: synthesize
+      depends_on: [product-check]
+      instruction: >-
+        Return a one-page product decision with outcome, scope, non-goals,
+        acceptance criteria, measurement, risks, and next delivery action.
+        DELIVERY CONTRACT: write the complete decision to a temporary markdown
+        file under ${TMPDIR:-/tmp}/opencode-workflow-reports (create the
+        directory if         missing), named product-summary.md,
+        and verify the file is non-empty. Then submit ONLY that absolute
+        file-path string as your output; do not include the decision body or
+        any other text.

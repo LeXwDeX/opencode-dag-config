@@ -1,0 +1,103 @@
+# Full read-only reference for a repository, subsystem, or release security audit.
+title: "Security audit (full): threat surface → code and upstream supply chain → verify"
+config:
+  name: security-audit-full
+  max_concurrency: 4
+  max_node_replan_attempts: 3
+  max_total_nodes: 24
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Assess the confirmed scope for exploitable code, authorization, secret,
+    configuration, and upstream supply-chain risks using safe verified evidence.
+  blocks:
+    - id: security-scope
+      kind: explore
+      instruction: >-
+        Establish assets, trust boundaries, attackers, untrusted inputs,
+        privileged sinks, identities, data stores, filesystem/process/network
+        access, deployments, dependencies, build and release paths, and security
+        requirements. Redact secrets and never probe production or external targets.
+
+    - id: vulnerability-evidence
+      kind: explore
+      depends_on: [security-scope]
+      instruction: >-
+        Trace untrusted sources to privileged sinks for injection, command
+        execution, traversal, SSRF, unsafe deserialization, cryptographic misuse,
+        sensitive disclosure, and trust-boundary prompt or template injection.
+        Record the control, bypass, trigger, impact, and file:line evidence.
+
+    - id: authorization-evidence
+      kind: explore
+      depends_on: [security-scope]
+      instruction: >-
+        Trace authentication, authorization, tenant/project/session isolation,
+        ownership, capability lifetimes, privilege transitions, cross-process and
+        cross-worktree access, and persistence. Separate bypasses from hardening.
+
+    - id: upstream-supply-chain-evidence
+      kind: explore
+      depends_on: [security-scope]
+      instruction: >-
+        Audit every relevant upstream origin and update path: direct/transitive
+        dependencies, lockfiles, registries, Git SHAs and tags, downloaded
+        binaries or archives, vendored code, generated artifacts, build scripts,
+        maintainers and ownership changes, release provenance, signatures,
+        checksums, CI actions and token permissions, dependency confusion,
+        typosquatting, abandoned packages, and compromised-version indicators.
+        Run documented package, SBOM, provenance, and vulnerability scanners when
+        available. Bind advisories to exact locked versions, publication/database
+        timestamps, reachable use, fixed versions, and primary upstream evidence.
+
+    - id: secrets-config-evidence
+      kind: explore
+      depends_on: [security-scope]
+      instruction: >-
+        Inspect tracked configuration, examples, logs, fixtures, histories,
+        workflows, bundles, and release assets for secrets and unsafe defaults.
+        Never print or test a credential; record only redacted class and location.
+
+    - id: security-analysis
+      kind: review
+      depends_on: [vulnerability-evidence, authorization-evidence, upstream-supply-chain-evidence, secrets-config-evidence]
+      instruction: >-
+        Build one deduplicated claim set. A scanner alert alone is not a finding:
+        require an affected version or path, reachable behavior, missing or
+        bypassable control, trigger, impact, and current source fingerprint.
+        Preserve unresolved claims without inflating severity.
+
+    - id: security-verification
+      kind: verify
+      depends_on: [security-analysis]
+      instruction: >-
+        Verify every proposed CRITICAL/HIGH item and representative lower items
+        with safe local fixtures, public test seams, static queries, package
+        audits, SBOM or provenance checks. Refute false positives; do not create
+        live exploits, contact external systems, or modify production data.
+
+    - id: security-decision
+      kind: review
+      depends_on: [security-verification]
+      instruction: >-
+        Rank verified issues by exploitability, privileges, exposure, blast
+        radius, data sensitivity, upstream confidence, and recovery cost.
+        Classify vulnerability, exposed secret, compromised or vulnerable
+        upstream, insecure configuration, hardening, and unresolved risk; state
+        blockers, rotations, upgrades, removals, compensating controls, and owners.
+
+    - id: security-report
+      kind: synthesize
+      depends_on: [security-decision]
+      instruction: >-
+        Report scope and fingerprint, threat model, tools and database timestamps,
+        verified and refuted findings, upstream inventory and provenance gaps,
+        redacted incidents, remediation, regression seams, residual uncertainty,
+        and PASS, FAIL, or BLOCKED. Exclude secret values and reusable exploit payloads.
+        DELIVERY CONTRACT: write the complete final report to a temporary
+        markdown file under ${TMPDIR:-/tmp}/opencode-workflow-reports (create
+        the directory if missing), named security-audit-full-security-report.md,
+        and verify the file is non-empty. Then submit ONLY that absolute
+        file-path string as your output; do not include the report body or any
+        other text.

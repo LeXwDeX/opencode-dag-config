@@ -1,0 +1,64 @@
+# Lightweight reference for one bounded module and one write owner.
+title: "Project development (lite): plan → code → verify → review"
+config:
+  name: project-development-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 12
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Implement a bounded, confirmed change with one behavior check and the required package gates.
+  blocks:
+    - id: lite-development-plan
+      kind: plan
+      instruction: >-
+        Confirm current behavior, one owning module, bounded files, acceptance
+        seam, required gates, and non-goals. Record any need for parallel writers,
+        migration, cross-module design, or release work.
+
+    - id: lite-development-gate
+      kind: review
+      depends_on: [lite-development-plan]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: lite-development-code
+      kind: coding
+      depends_on: [lite-development-gate]
+      instruction: >-
+        Make a public behavior check fail, implement the smallest scoped change,
+        make it pass, and avoid unrelated cleanup or speculative abstractions.
+
+    - id: lite-development-verify
+      kind: verify
+      depends_on: [lite-development-code]
+      instruction: >-
+        Run the focused check, affected package typecheck, and every documented
+        gate triggered by the changed files. Record exact commands and results.
+
+    - id: lite-development-review
+      kind: review
+      depends_on: [lite-development-verify]
+      instruction: >-
+        Check the diff against repository standards, confirmed intent, test
+        sensitivity, and user-visible behavior. Report blockers and residual risk.
+
+    - id: lite-development-report
+      kind: synthesize
+      depends_on: [lite-development-review]
+      instruction: >-
+        Consolidate the delivered change, behavior check, gate results, and
+        review verdict into one final delivery report. DELIVERY CONTRACT: write
+        the complete report to a temporary markdown file under
+        ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory if
+        missing), named lite-development-report.md,
+        and verify the file is non-empty. Then submit ONLY that absolute
+        file-path string as your output; do not include the report body or any
+        other text.

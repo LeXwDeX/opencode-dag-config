@@ -1,0 +1,60 @@
+# Lightweight read-only reference for a bounded change or low-risk subsystem.
+title: "Security audit (lite): scope → code and upstream checks → decision"
+config:
+  name: security-audit-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 12
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Check a bounded scope for reachable security regressions and upstream supply-chain risk.
+  blocks:
+    - id: lite-security-scope
+      kind: explore
+      instruction: >-
+        Identify changed trust boundaries, untrusted inputs, privileged sinks,
+        authorization decisions, secrets, dependencies, downloads, CI and release
+        paths. Record exposed credentials, identity or isolation changes, new
+        executable upstreams, and broad release impact.
+
+    - id: lite-security-gate
+      kind: review
+      depends_on: [lite-security-scope]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: lite-security-checks
+      kind: verify
+      depends_on: [lite-security-gate]
+      instruction: >-
+        Run relevant repository scanners and trace code source-to-sink paths.
+        For upstream changes, verify exact locked version or SHA, origin,
+        checksum/provenance, advisory status, reachable use, and fixed version.
+        Redact secrets and use only safe local checks.
+
+    - id: lite-security-decision
+      kind: review
+      depends_on: [lite-security-checks]
+      instruction: >-
+        Separate verified vulnerabilities, upstream supply-chain blockers,
+        insecure configuration, hardening, false positives, and unknowns. A tool
+        alert without reachability or affected-version evidence cannot block.
+
+    - id: lite-security-report
+      kind: synthesize
+      depends_on: [lite-security-decision]
+      instruction: >-
+        Return scope, exact tools and versions, findings and evidence, upstream
+        actions, redacted incidents, verdict, and residual risk. DELIVERY
+        CONTRACT: write the complete final report to a temporary markdown file
+        under ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory
+        if missing), named lite-security-report.md, and
+        verify the file is non-empty. Then submit ONLY that absolute file-path
+        string as your output; do not include the report body or any other text.

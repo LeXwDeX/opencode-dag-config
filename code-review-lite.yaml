@@ -1,0 +1,57 @@
+# Lightweight reference for a small, bounded diff.
+title: "Code review (lite): pin diff → run gates → review"
+config:
+  name: code-review-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Review one bounded diff against its intent, repository rules, and required checks.
+  blocks:
+    - id: lite-review-scope
+      kind: explore
+      instruction: >-
+        Resolve the fixed point and HEAD, inspect the complete three-dot diff,
+        request, repository rules, touched callers, and required checks. Record
+        cross-module, release, migration, and high-risk boundaries.
+
+    - id: lite-review-gate
+      kind: review
+      depends_on: [lite-review-scope]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: lite-review-gates
+      kind: verify
+      depends_on: [lite-review-gate]
+      instruction: >-
+        Run the focused tests, affected typecheck, and every documented gate
+        triggered by the changed files. Record exact results without fixing them.
+
+    - id: lite-review-decision
+      kind: review
+      depends_on: [lite-review-gates]
+      instruction: >-
+        Review Standards and Intent separately, then check correctness and test
+        sensitivity. Cite each blocker to a rule, requirement, or observable
+        failure; separate optional hardening and pre-existing debt.
+
+    - id: lite-review-report
+      kind: synthesize
+      depends_on: [lite-review-decision]
+      instruction: >-
+        Return fixed point, HEAD, checks, per-axis verdicts, findings, residual
+        risk, and merge decision. DELIVERY CONTRACT: write the complete final
+        report to a temporary markdown file under
+        ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory if
+        missing), named lite-review-report.md, and verify the
+        file is non-empty. Then submit ONLY that absolute file-path string as
+        your output; do not include the report body or any other text.

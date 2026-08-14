@@ -1,0 +1,57 @@
+# Lightweight reference for a local, reversible technical design.
+title: "Technical design (lite): map → design → review"
+config:
+  name: technical-design-lite
+  max_concurrency: 2
+  max_node_replan_attempts: 2
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Define the smallest correct interface and implementation plan for a bounded change.
+  blocks:
+    - id: design-map
+      kind: explore
+      instruction: >-
+        Map current behavior, owning module, callers, invariants, tests, and the
+        one material risk. Record any migration, durable state, concurrency,
+        security, or competing-authority boundary.
+
+    - id: design-lite-gate
+      kind: review
+      depends_on: [design-map]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
+
+    - id: bounded-design
+      kind: plan
+      depends_on: [design-lite-gate]
+      instruction: >-
+        Specify the narrow owning interface, behavior, errors, write set,
+        acceptance seam, and smallest implementation sequence. Avoid new
+        abstractions unless they hide complexity from more than one caller.
+
+    - id: bounded-design-review
+      kind: review
+      depends_on: [bounded-design]
+      instruction: >-
+        Check correctness, repository fit, change locality, scope, and whether
+        callers remain free of internal ordering and persistence knowledge.
+
+    - id: bounded-design-summary
+      kind: synthesize
+      depends_on: [bounded-design-review]
+      instruction: >-
+        Return the interface decision, file ownership, acceptance check, risks,
+        and implementation order. DELIVERY CONTRACT: write the complete design
+        summary to a temporary markdown file under
+        ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory if
+        missing), named bounded-design-summary.md, and
+        verify the file is non-empty. Then submit ONLY that absolute file-path
+        string as your output; do not include the summary body or any other text.

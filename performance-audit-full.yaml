@@ -1,0 +1,81 @@
+# Full read-only reference for a subsystem or release performance assessment.
+title: "Performance audit (full): baseline → parallel evidence → benchmark → decision"
+config:
+  name: performance-audit-full
+  max_concurrency: 4
+  max_node_replan_attempts: 3
+  max_total_nodes: 22
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Identify and verify material latency, throughput, memory, I/O, concurrency,
+    and scale bottlenecks against a reproducible baseline.
+  blocks:
+    - id: performance-baseline
+      kind: explore
+      instruction: >-
+        Define workload, environment, data size, warmup, latency percentiles,
+        throughput, memory, CPU, I/O, concurrency, and user-visible threshold.
+        Build a repeatable baseline command before diagnosing implementation.
+
+    - id: algorithm-evidence
+      kind: explore
+      depends_on: [performance-baseline]
+      instruction: >-
+        Inspect hot paths for poor complexity, repeated scans, excessive
+        allocation, serialization, recomputation, and unbounded data structures.
+        Bind each claim to workload growth and a measured or countable cost.
+
+    - id: io-runtime-evidence
+      kind: explore
+      depends_on: [performance-baseline]
+      instruction: >-
+        Inspect database, filesystem, network, process, startup, rendering, and
+        cache paths for blocking work, excess round trips, missing batching,
+        invalidation errors, and work on critical latency paths.
+
+    - id: concurrency-resource-evidence
+      kind: explore
+      depends_on: [performance-baseline]
+      instruction: >-
+        Inspect contention, queues, backpressure, fan-out, retries, timeouts,
+        fiber/process/timer lifetimes, memory retention, and degradation under
+        saturation. Distinguish correctness defects from performance limits.
+
+    - id: performance-analysis
+      kind: review
+      depends_on: [algorithm-evidence, io-runtime-evidence, concurrency-resource-evidence]
+      instruction: >-
+        Deduplicate by root cause and rank hypotheses by measured impact and
+        confidence. Reject micro-optimizations without a hot-path baseline and
+        define the smallest benchmark or profile that can falsify each claim.
+
+    - id: performance-verification
+      kind: verify
+      depends_on: [performance-analysis]
+      instruction: >-
+        Run controlled benchmarks or profiles with pinned inputs and environment.
+        Report distributions, variance, before/baseline comparison, resource
+        counters, and raw artifacts; refute claims that do not reproduce.
+
+    - id: performance-decision
+      kind: review
+      depends_on: [performance-verification]
+      instruction: >-
+        Classify verified bottlenecks by user impact, scale threshold, confidence,
+        complexity, regression risk, and expected gain. Separate blockers,
+        worthwhile optimization, monitoring, and unsupported speculation.
+
+    - id: performance-report
+      kind: synthesize
+      depends_on: [performance-decision]
+      instruction: >-
+        Report baseline, workload, environment, evidence, verified bottlenecks,
+        refuted claims, prioritized fixes, expected gains, benchmark seams,
+        monitoring, and residual scale limits. DELIVERY CONTRACT: write the
+        complete final report to a temporary markdown file under
+        ${TMPDIR:-/tmp}/opencode-workflow-reports (create the directory if
+        missing), named performance-audit-full-performance-report.md, and
+        verify the file is non-empty. Then submit ONLY that absolute file-path
+        string as your output; do not include the report body or any other text.

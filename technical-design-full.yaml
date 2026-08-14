@@ -1,0 +1,81 @@
+# Full reference for a new subsystem, migration, or high-cost technical choice.
+title: "Technical design (full): map → model → alternatives → prototype → design"
+config:
+  name: technical-design-full
+  max_concurrency: 3
+  max_node_replan_attempts: 3
+  max_total_nodes: 20
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  objective: >-
+    Produce an implementation-ready technical design with one owning module,
+    explicit invariants, verified tradeoffs, and bounded migration packages.
+  blocks:
+    - id: existing-system
+      kind: explore
+      instruction: >-
+        Map current behavior, callers, state, persistence, concurrency, recovery,
+        public schemas, tests, repository rules, and change hotspots. Verify
+        actual seams and call paths instead of designing from filenames.
+
+    - id: domain-model
+      kind: explore
+      instruction: >-
+        Extract the domain language, entities, values, ownership, state
+        transitions, invariants, failure modes, and product decisions. Record
+        ambiguous terms and do not let implementation vocabulary replace them.
+
+    - id: risk-model
+      kind: explore
+      instruction: >-
+        Identify scale, security, compatibility, migration, crash, concurrency,
+        operability, and rollout risks. Bind each material risk to a trigger,
+        observable impact, and required evidence.
+
+    - id: design-options
+      kind: plan
+      depends_on: [existing-system, domain-model, risk-model]
+      instruction: >-
+        Compare at least two interfaces. Prefer the design that hides the most
+        complexity behind the smallest owning interface, improves change
+        locality, uses types for state, and deletes parallel authorities. Define
+        data flow, errors, lifecycle, migration, test seams, and rejected options.
+
+    - id: design-prototype
+      kind: prototype
+      depends_on: [design-options]
+      instruction: >-
+        Test only the riskiest design assumption with a reversible prototype,
+        benchmark, migration rehearsal, or concurrency harness. State the
+        falsifiable prediction first and discard non-production artifacts after.
+
+    - id: design-verification
+      kind: verify
+      depends_on: [design-prototype]
+      instruction: >-
+        Verify the selected interface against all callers, invariants, failure
+        modes, compatibility, migration, and public test seams. Confirm that no
+        caller must understand internal persistence or ordering details.
+
+    - id: design-review
+      kind: review
+      depends_on: [design-verification]
+      instruction: >-
+        Review the design for depth, leverage, locality, domain fidelity,
+        recoverability, security, and operational clarity. Reject speculative
+        abstractions and designs that preserve duplicate authorities.
+
+    - id: design-document
+      kind: synthesize
+      depends_on: [design-review]
+      instruction: >-
+        Produce the technical design with context, decision, interface,
+        invariants, state model, data flow, errors, migration, rollout, work
+        packages, test plan, observability, risks, rejected options, and ADRs.
+        DELIVERY CONTRACT: write the complete design document to a temporary
+        markdown file under ${TMPDIR:-/tmp}/opencode-workflow-reports (create
+        the directory if missing), named
+        technical-design-full-design-document.md, and verify the file is
+        non-empty. Then submit ONLY that absolute file-path string as your
+        output; do not include the design body or any other text.
