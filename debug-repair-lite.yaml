@@ -15,12 +15,23 @@ config:
       kind: debug
       instruction: >-
         Reproduce and minimize the exact symptom with one deterministic command.
-        Establish the causal boundary; escalate to the full route if hypotheses,
-        concurrency, production-only state, or multiple modules remain unresolved.
+        Establish the causal boundary and record unresolved hypotheses,
+        concurrency, production-only state, or cross-module scope.
+
+    - id: lite-repair-gate
+      kind: review
+      depends_on: [lite-reproduce]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: lite-repair
       kind: coding
-      depends_on: [lite-reproduce]
+      depends_on: [lite-repair-gate]
       instruction: >-
         Add the failing regression at the real seam, implement only the proven
         fix, make the check pass, and avoid unrelated cleanup.

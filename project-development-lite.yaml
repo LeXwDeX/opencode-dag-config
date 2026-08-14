@@ -15,12 +15,23 @@ config:
       kind: plan
       instruction: >-
         Confirm current behavior, one owning module, bounded files, acceptance
-        seam, required gates, and non-goals. Escalate to the full route if the
-        change needs parallel writers, migration, cross-module design, or release work.
+        seam, required gates, and non-goals. Record any need for parallel writers,
+        migration, cross-module design, or release work.
+
+    - id: lite-development-gate
+      kind: review
+      depends_on: [lite-development-plan]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: lite-development-code
       kind: coding
-      depends_on: [lite-development-plan]
+      depends_on: [lite-development-gate]
       instruction: >-
         Make a public behavior check fail, implement the smallest scoped change,
         make it pass, and avoid unrelated cleanup or speculative abstractions.

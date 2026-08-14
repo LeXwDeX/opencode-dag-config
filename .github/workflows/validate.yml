@@ -42,6 +42,12 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - name: Validate route catalog
+        run: bun script/validate-route-catalog.ts "$GITHUB_WORKSPACE"
+
+      - name: Test route catalog guardrails
+        run: bun test script/validate-route-catalog.test.ts
+
       - name: Install runtime dependencies
         working-directory: runtime
         run: bun install --frozen-lockfile

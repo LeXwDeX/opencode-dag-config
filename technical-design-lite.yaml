@@ -15,12 +15,23 @@ config:
       kind: explore
       instruction: >-
         Map current behavior, owning module, callers, invariants, tests, and the
-        one material risk. Escalate to the full route for migration, durable
-        state, concurrency, security, or multiple competing authorities.
+        one material risk. Record any migration, durable state, concurrency,
+        security, or competing-authority boundary.
+
+    - id: design-lite-gate
+      kind: review
+      depends_on: [design-map]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: bounded-design
       kind: plan
-      depends_on: [design-map]
+      depends_on: [design-lite-gate]
       instruction: >-
         Specify the narrow owning interface, behavior, errors, write set,
         acceptance seam, and smallest implementation sequence. Avoid new

@@ -15,12 +15,23 @@ config:
       kind: explore
       instruction: >-
         Define the exact workload, environment, metric, threshold, and repeatable
-        command. Escalate to the full route if the symptom spans subsystems,
-        saturation behavior, memory growth, or multiple competing hypotheses.
+        command. Record subsystem spread, saturation behavior, memory growth,
+        and competing hypotheses.
+
+    - id: lite-performance-gate
+      kind: review
+      depends_on: [lite-performance-baseline]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: lite-performance-measure
       kind: verify
-      depends_on: [lite-performance-baseline]
+      depends_on: [lite-performance-gate]
       instruction: >-
         Inspect the reachable hot path and run the smallest controlled benchmark
         or profile. Record raw measurements, variance, resource counters, and the
@@ -28,7 +39,7 @@ config:
 
     - id: lite-performance-decision
       kind: review
-      depends_on: [lite-performance-baseline, lite-performance-measure]
+      depends_on: [lite-performance-measure]
       instruction: >-
         Decide whether the concern is reproduced and material. Separate a
         verified bottleneck from measurement noise, scale limit, correctness bug,
