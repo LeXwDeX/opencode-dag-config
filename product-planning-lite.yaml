@@ -15,12 +15,23 @@ config:
       kind: explore
       instruction: >-
         Confirm the user, problem, current behavior, desired outcome, constraints,
-        evidence, and user-owned decision. Stop if the request hides a high-impact
-        or irreversible choice that requires the full route.
+        evidence, and user-owned decision. Record any high-impact or irreversible
+        choice without resolving it.
+
+    - id: product-lite-gate
+      kind: review
+      depends_on: [product-briefing]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: product-proposal
       kind: plan
-      depends_on: [product-briefing]
+      depends_on: [product-lite-gate]
       instruction: >-
         Recommend the smallest reversible option and one credible alternative.
         State scope, non-goals, acceptance checks, measurement, main assumption,

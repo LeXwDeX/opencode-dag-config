@@ -16,12 +16,23 @@ config:
       instruction: >-
         Identify changed trust boundaries, untrusted inputs, privileged sinks,
         authorization decisions, secrets, dependencies, downloads, CI and release
-        paths. Escalate to the full route for exposed credentials, identity or
-        isolation changes, new executable upstreams, or broad release impact.
+        paths. Record exposed credentials, identity or isolation changes, new
+        executable upstreams, and broad release impact.
+
+    - id: lite-security-gate
+      kind: review
+      depends_on: [lite-security-scope]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: lite-security-checks
       kind: verify
-      depends_on: [lite-security-scope]
+      depends_on: [lite-security-gate]
       instruction: >-
         Run relevant repository scanners and trace code source-to-sink paths.
         For upstream changes, verify exact locked version or SHA, origin,
@@ -30,7 +41,7 @@ config:
 
     - id: lite-security-decision
       kind: review
-      depends_on: [lite-security-scope, lite-security-checks]
+      depends_on: [lite-security-checks]
       instruction: >-
         Separate verified vulnerabilities, upstream supply-chain blockers,
         insecure configuration, hardening, false positives, and unknowns. A tool

@@ -15,19 +15,30 @@ config:
       kind: explore
       instruction: >-
         Resolve the fixed point and HEAD, inspect the complete three-dot diff,
-        request, repository rules, touched callers, and required checks. Escalate
-        to the full route for cross-module, release, migration, or high-risk changes.
+        request, repository rules, touched callers, and required checks. Record
+        cross-module, release, migration, and high-risk boundaries.
+
+    - id: lite-review-gate
+      kind: review
+      depends_on: [lite-review-scope]
+      report_to_parent: true
+      instruction: >-
+        Decide whether the evidence still satisfies this lite workflow's bounded,
+        reversible, single-owner, no-high-risk premises. Return ACCEPT only when
+        it does. Otherwise return REVISE or BLOCKED with exact reasons and
+        required actions. Do not name another workflow; the parent Router owns
+        route and control changes.
 
     - id: lite-review-gates
       kind: verify
-      depends_on: [lite-review-scope]
+      depends_on: [lite-review-gate]
       instruction: >-
         Run the focused tests, affected typecheck, and every documented gate
         triggered by the changed files. Record exact results without fixing them.
 
     - id: lite-review-decision
       kind: review
-      depends_on: [lite-review-scope, lite-review-gates]
+      depends_on: [lite-review-gates]
       instruction: >-
         Review Standards and Intent separately, then check correctness and test
         sensitivity. Cite each blocker to a rule, requirement, or observable

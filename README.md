@@ -9,15 +9,15 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 
 仓库只保留 7 个领域，每个领域恰好一份 `full` 和一份 `lite`：
 
-| 领域 | 完整参考 | 轻量参考 |
-|---|---|---|
-| 产品文档与规划 | `product-planning-full.yaml` | `product-planning-lite.yaml` |
-| 技术与架构设计 | `technical-design-full.yaml` | `technical-design-lite.yaml` |
-| 项目开发交付 | `project-development-full.yaml` | `project-development-lite.yaml` |
-| Bug 诊断修复 | `debug-repair-full.yaml` | `debug-repair-lite.yaml` |
-| 代码与变更审核 | `code-review-full.yaml` | `code-review-lite.yaml` |
-| 漏洞与供应链安全 | `security-audit-full.yaml` | `security-audit-lite.yaml` |
-| 性能与资源审计 | `performance-audit-full.yaml` | `performance-audit-lite.yaml` |
+| 领域             | 完整参考                        | 轻量参考                        |
+| ---------------- | ------------------------------- | ------------------------------- |
+| 产品文档与规划   | `product-planning-full.yaml`    | `product-planning-lite.yaml`    |
+| 技术与架构设计   | `technical-design-full.yaml`    | `technical-design-lite.yaml`    |
+| 项目开发交付     | `project-development-full.yaml` | `project-development-lite.yaml` |
+| Bug 诊断修复     | `debug-repair-full.yaml`        | `debug-repair-lite.yaml`        |
+| 代码与变更审核   | `code-review-full.yaml`         | `code-review-lite.yaml`         |
+| 漏洞与供应链安全 | `security-audit-full.yaml`      | `security-audit-lite.yaml`      |
+| 性能与资源审计   | `performance-audit-full.yaml`   | `performance-audit-lite.yaml`   |
 
 ## 积木式路线
 
@@ -43,15 +43,15 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 `workflow(action="start", spec_path="<file>")` 启动。模型调用不得猜测或内联
 嵌套 `spec`；模板目标已完全匹配时才直接使用该模板的 `spec_path`。
 
-## 启发式选择
+## 路由权威
 
-Router 先判断领域，再按自治风险选择档位：
-
-- 选择 `lite`：目标已确认、单一写入所有者、可逆、无迁移、无高风险边界。
-- 选择 `full`：需求或设计仍有不确定性，或者涉及跨模块、并发、持久化、迁移、
-  身份权限、上游可执行依赖、CI/发布、生产影响。
-- 从 `lite` 升级为 `full`：实际证据超出原范围、需要第二写入所有者、公共接口
-  发生变化、验证无法在现有 seam 表达，或发现高影响风险。
+运行时的 Orchestration Router 是领域、`full`/`lite` 和跨领域组合的唯一选择
+权威；本仓库不维护第二套选择提示词。`workflow(action="list")` 会把每个模板的
+名称、标题和 `objective` 暴露给 Router，模板自身只负责可复用拓扑和专项证据
+契约。维护模板时保持“一领域一份 `full`、一份 `lite`”，不要在 README、Skill
+或模板节点中另建路由算法。`lite` 运行中若前提失效，结构化 gate 必须在后续
+工作前返回非 `ACCEPT` 并唤醒父会话；workflow 完成后由父 Router 使用新节点
+ID 做 additive `extend`，需要替换终态节点时启动新 workflow。
 
 安全领域的上游供应链审查覆盖直接和传递依赖、锁文件、Git SHA/tag、注册表、
 下载二进制与归档、vendored code、构建脚本、CI Action、维护权变化、SBOM、
@@ -89,11 +89,11 @@ git -C ~/.config/opencode/workflows pull
 
 ## 作用域
 
-| 作用域 | 位置 | 优先级 |
-|--------|------|--------|
-| 项目级 | `<项目>/.opencode/workflows/` | 最高（覆盖同名） |
-| 全局（本仓库） | `~/.config/opencode/workflows/` | 兜底 |
-| 内置（release 二进制） | 编译进二进制 | 最后兜底（封闭网络可用） |
+| 作用域                 | 位置                            | 优先级                   |
+| ---------------------- | ------------------------------- | ------------------------ |
+| 项目级                 | `<项目>/.opencode/workflows/`   | 最高（覆盖同名）         |
+| 全局（本仓库）         | `~/.config/opencode/workflows/` | 兜底                     |
+| 内置（release 二进制） | 编译进二进制                    | 最后兜底（封闭网络可用） |
 
 ## 注意
 
