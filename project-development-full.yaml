@@ -23,10 +23,14 @@ config:
       kind: plan
       depends_on: [development-map]
       instruction: >-
-        Define the smallest owning interfaces, dependency order, disjoint write
-        sets, public test seams, acceptance criteria, falsifiers, rollout, and
-        evidence returned by each package. Keep human confirmation at the parent
-        for high-impact product choices.
+        Define the smallest owning interfaces, dependency order, public test
+        seams, acceptance criteria, falsifiers, rollout, and evidence returned
+        by each package. Parallel implementation slices run concurrently in one
+        workspace, so partition write sets triple-disjoint: source files,
+        generated artifacts, and lockfiles must not overlap across slices, and
+        no shared build may be triggered by a slice; keep a slice that owns
+        generated or delivery wiring separate from source-only slices. Keep
+        human confirmation at the parent for high-impact product choices.
 
     - id: production-slice
       kind: coding
@@ -75,10 +79,9 @@ config:
       depends_on: [development-review]
       instruction: >-
         Report changed modules, behavior, exact checks and results, acceptance
-        coverage, review verdicts, rollout, rollback, and deliberately deferred work.
-        DELIVERY CONTRACT: write the complete final report to a temporary
-        markdown file under ${TMPDIR:-/tmp}/opencode-workflow-reports (create
-        the directory if missing), named
-        project-development-full-development-report.md, and verify the file is
-        non-empty. Then submit ONLY that absolute file-path string as your
-        output; do not include the report body or any other text.
+        coverage, review verdicts, rollout, rollback, and deliberately deferred
+        work. Write the complete final report to a non-empty markdown file
+        under the project .opencode/workflow-reports/ directory, then submit
+        ONLY that absolute file path as your output — the runtime records the
+        native file reference with its integrity receipt; do not include the
+        report body or any other text.
