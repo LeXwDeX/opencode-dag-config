@@ -10,7 +10,7 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 仓库只保留 7 个领域，每个领域恰好一份 `full` 和一份 `lite`：
 
 | 领域             | 完整参考                        | 轻量参考                        |
-| ---------------- | ------------------------------- | ------------------------------- |
+| --------------- | ------------------------------- | ------------------------------- |
 | 产品文档与规划   | `product-planning-full.yaml`    | `product-planning-lite.yaml`    |
 | 技术与架构设计   | `technical-design-full.yaml`    | `technical-design-lite.yaml`    |
 | 项目开发交付     | `project-development-full.yaml` | `project-development-lite.yaml` |
@@ -18,6 +18,16 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 | 代码与变更审核   | `code-review-full.yaml`         | `code-review-lite.yaml`         |
 | 漏洞与供应链安全 | `security-audit-full.yaml`      | `security-audit-lite.yaml`      |
 | 性能与资源审计   | `performance-audit-full.yaml`   | `performance-audit-lite.yaml`   |
+
+## 跨域路线
+
+跨域路线不占领域槽位（7 域 one full + one lite 的定策不变），是跨多个领域的
+预拼装拓扑：
+
+| 路线                  | 用途                                                                         |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `ultra-flow-route.yaml` | 六积木（探索 → 设计 → 开发 → 验收 → 发布 → 汇总）+ 五道分级检查点（轻量方向判定 ×3、独立取证三件套 ×2）。检查点 verdict 为 `continue`/`replan`：continue 不扰流程，replan 唤醒父会话做 additive 重规划（findings 注入、回环 ≤3）。发布积木可由父对话在重定向时删除 |
+| `release-route.yaml`    | 发布装配：机制探测 → 版本推导（latest tag + commit 类型）→ 人工门（默认 hold，父会话注入确认后才 publish）→ 发布执行 → 验证 |
 
 ## 积木式路线
 
