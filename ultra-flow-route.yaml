@@ -58,6 +58,7 @@ config:
       name: "stage 2: project design (spec + how)"
       worker_type: plan
       depends_on: [cp-after-exploration]
+      condition: cp-after-exploration.output.verdict == "continue"
       prompt_template:
         inline: >-
           Design stage for the workflow objective. WHAT: define the behavior contract —
@@ -120,6 +121,7 @@ config:
       name: "stage 3: project development"
       worker_type: build
       depends_on: [cp-design-decision]
+      condition: cp-design-decision.output.verdict == "continue"
       prompt_template:
         inline: >-
           Development stage for the workflow objective. Follow the project-development
@@ -159,6 +161,7 @@ config:
       name: "stage 4: test and acceptance evidence"
       worker_type: general
       depends_on: [cp-after-development]
+      condition: cp-after-development.output.verdict == "continue"
       prompt_template:
         inline: >-
           Test and acceptance stage for the workflow objective. Run the documented gates
@@ -220,6 +223,7 @@ config:
       name: "stage 5: build and release (optional)"
       worker_type: general
       depends_on: [cp-acceptance-decision]
+      condition: cp-acceptance-decision.output.verdict == "continue"
       prompt_template:
         inline: >-
           Release stage for the workflow objective. Probe the repository's release
@@ -260,6 +264,7 @@ config:
       name: "stage 6: summary"
       worker_type: general
       depends_on: [cp-after-release]
+      condition: cp-after-release.output.verdict == "continue"
       prompt_template:
         inline: >-
           Consolidated report for the workflow objective: stages executed including

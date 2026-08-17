@@ -65,6 +65,7 @@ config:
       name: "publish the release"
       worker_type: general
       depends_on: [release-gate]
+      condition: release-gate.output.verdict == "proceed"
       prompt_template:
         inline: >-
           Execute the confirmed release exactly as briefed: create the tag,
