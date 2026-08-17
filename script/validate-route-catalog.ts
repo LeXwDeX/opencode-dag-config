@@ -14,18 +14,23 @@ const domains = [
 const expected = domains
   .flatMap((domain) => [`${domain}-full.yaml`, `${domain}-lite.yaml`])
   .sort()
-const routeNames = expected.map((file) => path.basename(file, ".yaml"))
+// Cross-domain routes compose several domains into one topology; they are not
+// domain pairs, so they bypass the lite/topology checks but still carry
+// config with config.name == filename stem.
+const crossDomainRoutes = ["release-route.yaml", "ultra-flow-route.yaml"]
+const catalog = [...expected, ...crossDomainRoutes].sort()
+const routeNames = catalog.map((file) => path.basename(file, ".yaml"))
 const files = (await fs.readdir(root))
   .filter((file) => /\.ya?ml$/i.test(file))
   .sort()
 
-if (JSON.stringify(files) !== JSON.stringify(expected)) {
-  console.error(`Route catalog must contain exactly:\n${expected.join("\n")}`)
+if (JSON.stringify(files) !== JSON.stringify(catalog)) {
+  console.error(`Route catalog must contain exactly:\n${catalog.join("\n")}`)
   console.error(`Found:\n${files.join("\n")}`)
   process.exit(1)
 }
 
-for (const filename of expected) {
+for (const filename of catalog) {
   const parsed: unknown = Bun.YAML.parse(
     await Bun.file(path.join(root, filename)).text(),
   )
@@ -38,7 +43,7 @@ for (const filename of expected) {
 }
 
 console.log(
-  `Validated ${expected.length} routes across ${domains.length} full/lite domains.`,
+  `Validated ${catalog.length} routes: ${domains.length} full/lite domains plus ${crossDomainRoutes.length} cross-domain routes.`,
 )
 
 function isRecord(value: unknown): value is Record<string, unknown> {
