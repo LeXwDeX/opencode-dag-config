@@ -13,6 +13,7 @@ const routes = [
   "security-audit",
   "technical-design",
 ].flatMap((domain) => [`${domain}-full.yaml`, `${domain}-lite.yaml`])
+routes.push("release-route.yaml", "ultra-flow-route.yaml")
 
 let fixture: string
 
