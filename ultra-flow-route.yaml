@@ -1,0 +1,270 @@
+# Cross-domain route (not one of the 7 domain pairs). The parent retargets
+# every stage to the real task, removes stage-release when the project has no
+# release mechanics, and starts the graph. Checkpoints are direction gates:
+# verdict continue lets the flow run on untouched; verdict replan wakes the
+# parent, which adds correction nodes (findings as input, max 3 back-edges,
+# one decision point after the third).
+title: "Ultra flow: exploration → design → development → acceptance → release → summary with checkpoints"
+config:
+  name: ultra-flow-route
+  max_concurrency: 4
+  max_node_replan_attempts: 3
+  max_total_nodes: 26
+  node_defaults:
+    worker_config:
+      timeout_ms: 1800000
+  nodes:
+    - id: stage-exploration
+      name: "stage 1: product exploration"
+      worker_type: explore
+      depends_on: []
+      prompt_template:
+        inline: >-
+          Explore the product side of this objective: the workflow objective. Establish
+          the user, the job, current workarounds, pain, frequency, stakes, and
+          the desired outcome. Separate observed facts from assumptions. Grill
+          every materially ambiguous point into a sharp answer with an
+          auto-formed recommendation, and end with one sharpened brief plus the
+          decisions that remain user-owned.
+
+    - id: cp-after-exploration
+      name: "checkpoint: exploration → design direction"
+      worker_type: general
+      depends_on: [stage-exploration]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [continue, replan]
+          findings:
+            type: string
+          target:
+            type: string
+        required: [verdict, findings]
+      prompt_template:
+        inline: >-
+          Direction checkpoint. The objective is stated in your workflow context. Read the exploration
+          output above. Judge ONLY whether the direction is correct and whether
+          a replan is needed before design begins. Verdict continue when the
+          brief supports proceeding; replan with findings and the stage to
+          re-enter as target otherwise. Submit exactly the schema.
+
+    - id: stage-design
+      name: "stage 2: project design (spec + how)"
+      worker_type: plan
+      depends_on: [cp-after-exploration]
+      prompt_template:
+        inline: >-
+          Design stage for the workflow objective. WHAT: define the behavior contract —
+          observable behavior, acceptance scenarios, capability scope, suitable
+          as the body of exactly one platform issue (the issue IS the atom; no
+          X.Y task fragmentation). HOW: record a design decision only when the
+          change is cross-cutting, risky, or ambiguous, with alternatives
+          considered. Return the spec text, the design decision (or why none is
+          needed), and any user-owned decision that surfaced.
+
+    - id: cp-design-standards
+      name: "checkpoint: design quality evidence"
+      worker_type: explore
+      depends_on: [stage-design]
+      prompt_template:
+        inline: >-
+          Independently assess the design stage output for the workflow objective:
+          completeness, testability, ambiguity, and repository convention fit.
+          Cite each finding precisely and separate hard defects from judgement
+          calls.
+
+    - id: cp-design-intent
+      name: "checkpoint: design alignment evidence"
+      worker_type: explore
+      depends_on: [stage-design]
+      prompt_template:
+        inline: >-
+          Independently compare the design stage output with the original
+          objective: the workflow objective. Identify missing intent, scope creep, and
+          requirements that look covered but are misread.
+
+    - id: cp-design-decision
+      name: "checkpoint: design → development decision"
+      worker_type: general
+      depends_on: [cp-design-standards, cp-design-intent]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [continue, replan]
+          findings:
+            type: string
+          target:
+            type: string
+        required: [verdict, findings]
+      prompt_template:
+        inline: >-
+          Weighted design gate. Read both evidence nodes above and the design
+          output. Decide whether development may start for the workflow objective.
+          Verdict continue only when the design is faithful to intent and free
+          of hard defects; otherwise replan with findings and target stage.
+          Submit exactly the schema.
+
+    - id: stage-development
+      name: "stage 3: project development"
+      worker_type: build
+      depends_on: [cp-design-decision]
+      prompt_template:
+        inline: >-
+          Development stage for the workflow objective. Follow the project-development
+          discipline retargeted by the parent: disjoint write sets, a failing
+          behavior check at the public seam before the smallest change that
+          passes it, vertical slices, and repository gates bound to the exact
+          HEAD fingerprint. Stop on ownership or interface drift and report it.
+
+    - id: cp-after-development
+      name: "checkpoint: development → acceptance direction"
+      worker_type: general
+      depends_on: [stage-development]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [continue, replan]
+          findings:
+            type: string
+          target:
+            type: string
+        required: [verdict, findings]
+      prompt_template:
+        inline: >-
+          Direction checkpoint. The objective is stated in your workflow context. Read the development
+          output above. Judge whether the implemented direction still matches
+          the design and objective, and whether acceptance testing may start.
+          Verdict continue or replan with findings and target. Submit exactly
+          the schema.
+
+    - id: stage-acceptance
+      name: "stage 4: test and acceptance evidence"
+      worker_type: general
+      depends_on: [cp-after-development]
+      prompt_template:
+        inline: >-
+          Test and acceptance stage for the workflow objective. Run the documented gates
+          for every affected package and gather acceptance evidence: behavior
+          checks at public seams, CI check status from the platform, and the
+          difference between claimed and observed behavior. Bind every result
+          to the exact HEAD fingerprint and report gaps verbatim.
+
+    - id: cp-acceptance-standards
+      name: "checkpoint: acceptance standards evidence"
+      worker_type: explore
+      depends_on: [stage-acceptance]
+      prompt_template:
+        inline: >-
+          Independently assess the acceptance evidence for the workflow objective
+          against repository standards and required gates: completeness of the
+          gate set, validity of the fingerprint binding, and any stale or
+          missing evidence.
+
+    - id: cp-acceptance-intent
+      name: "checkpoint: acceptance alignment evidence"
+      worker_type: explore
+      depends_on: [stage-acceptance]
+      prompt_template:
+        inline: >-
+          Independently compare the acceptance evidence with the original
+          objective and the design-stage acceptance scenarios: the workflow objective.
+          Identify untested scenarios, weakened assertions, and behavior that
+          was never asked for.
+
+    - id: cp-acceptance-decision
+      name: "checkpoint: acceptance → release decision"
+      worker_type: general
+      depends_on: [cp-acceptance-standards, cp-acceptance-intent]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [continue, replan]
+          findings:
+            type: string
+          target:
+            type: string
+        required: [verdict, findings]
+      prompt_template:
+        inline: >-
+          Weighted acceptance gate for the workflow objective. Read both evidence nodes
+          above. Verdict continue only when CI is green, the review evidence
+          supports delivery, and acceptance scenarios are genuinely covered;
+          otherwise replan with findings and the stage to re-enter. Submit
+          exactly the schema.
+
+    - id: stage-release
+      name: "stage 5: build and release (optional)"
+      worker_type: general
+      depends_on: [cp-acceptance-decision]
+      prompt_template:
+        inline: >-
+          Release stage for the workflow objective. Probe the repository's release
+          mechanics (release workflow vs platform release creation), the latest
+          tag, and the commits landed by this plan. Derive the candidate
+          version from tag plus commit types (feat → minor, fix → patch,
+          breaking → major) and draft the changelog. Do NOT publish: submit the
+          release brief (mechanism, version, changelog, rollback) for the
+          human gate.
+
+    - id: cp-after-release
+      name: "checkpoint: release → summary direction"
+      worker_type: general
+      depends_on: [stage-release]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [continue, replan]
+          findings:
+            type: string
+          target:
+            type: string
+        required: [verdict, findings]
+      prompt_template:
+        inline: >-
+          Direction checkpoint for the workflow objective. Read the release stage
+          output. Verdict continue when the release outcome (or its documented
+          skip) is consistent with the plan; replan with findings and target
+          otherwise. Submit exactly the schema.
+
+    - id: stage-summary
+      name: "stage 6: summary"
+      worker_type: general
+      depends_on: [cp-after-release]
+      prompt_template:
+        inline: >-
+          Consolidated report for the workflow objective: stages executed including
+          skips with reasons, issue numbers, PR URLs, CI status, replan passes
+          used, merge position in the plan, release outcome, and any gate
+          waiting on the human. Write the complete report to a non-empty
+          markdown file under the project .opencode/workflow-reports/
+          directory, then submit ONLY that absolute file path as your output.

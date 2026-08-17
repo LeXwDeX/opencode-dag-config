@@ -1,0 +1,96 @@
+# Cross-domain route (not one of the 7 domain pairs): release assembly after
+# the final ordered merge. Default is a human gate — release-execute only runs
+# after the parent confirms the release brief. The parent retargets the
+# objective to the real plan and repository before start.
+title: "Release assembly: mechanism probe → version derivation → human gate → publish → verify"
+config:
+  name: release-route
+  max_concurrency: 2
+  max_node_replan_attempts: 3
+  max_total_nodes: 10
+  node_defaults:
+    worker_config:
+      timeout_ms: 900000
+  nodes:
+    - id: release-map
+      name: "probe release mechanics"
+      worker_type: explore
+      depends_on: []
+      prompt_template:
+        inline: >-
+          Probe the release mechanics of this repository: the workflow objective.
+          Identify the release pathway (release workflow dispatch vs platform
+          release creation vs package publish), the latest tag, branch
+          protection or ruleset constraints on releasing, and what the merge
+          history since the last tag contains. Report facts only.
+
+    - id: release-plan
+      name: "derive version and draft changelog"
+      worker_type: plan
+      depends_on: [release-map]
+      prompt_template:
+        inline: >-
+          From the release-map evidence, derive the candidate version (latest
+          tag plus landed commit types: feat → minor, fix → patch, breaking →
+          major) and draft the changelog grouped by type. Produce the complete
+          release brief: mechanism, version, changelog, publish steps, and
+          rollback path. Flag every assumption.
+
+    - id: release-gate
+      name: "release human gate brief"
+      worker_type: general
+      depends_on: [release-plan]
+      report_to_parent: true
+      required: true
+      worker_config:
+        timeout_ms: 600000
+      output_schema:
+        type: object
+        properties:
+          verdict:
+            type: string
+            enum: [proceed, hold]
+          brief:
+            type: string
+        required: [verdict, brief]
+      prompt_template:
+        inline: >-
+          Release gate. Consolidate the release-plan brief for human
+          confirmation: mechanism, candidate version, changelog draft, and the
+          exact publish command sequence. Default verdict hold — publishing is
+          irreversible and the parent must obtain the human decision; submit
+          proceed ONLY when the parent has injected an explicit confirmation.
+
+    - id: release-execute
+      name: "publish the release"
+      worker_type: general
+      depends_on: [release-gate]
+      prompt_template:
+        inline: >-
+          Execute the confirmed release exactly as briefed: create the tag,
+          write the changelog entry or release notes, and trigger the detected
+          release pathway. Record every command and its output; do not
+          improvise steps beyond the brief.
+
+    - id: release-verify
+      name: "verify the release landed"
+      worker_type: verify
+      depends_on: [release-execute]
+      prompt_template:
+        inline: >-
+          Verify the release exists and matches the brief: the tag or release
+          asset is visible on the platform, the version string is exact, and
+          any release workflow run completed successfully. Cite the observed
+          evidence; PASS only on exact match.
+
+    - id: release-report
+      name: "release report"
+      worker_type: general
+      depends_on: [release-verify]
+      prompt_template:
+        inline: >-
+          Report the release outcome: mechanism used, published version,
+          verification evidence, and rollback path. Write the complete report
+          to a non-empty markdown file under the project
+          .opencode/workflow-reports/ directory, then submit ONLY that
+          absolute file path as your output.
