@@ -85,15 +85,21 @@ ID 做 additive `extend`，需要替换终态节点时启动新 workflow。
 git clone git@github.com:LeXwDeX/opencode-dag-config.git ~/.config/opencode/workflows
 ```
 
-clone 后运行 `workflow(action: "list")` 即可看到全部可用模板；`/dag-flow` 等命令会指引 agent 阅读这些参考模板。
+clone 后运行 `workflow(action: "list")` 即可看到全部可用模板；`/dag-flow` 等命令会指引 agent 阅读这些参考模板。`/dag-init` / `/dag-auto` 是跨域路线的首要消费方：`/dag-init` 在平台握手时校验模板可用性，`/dag-auto` 的超流直接使用 `ultra-flow-route` / `release-route`。
 
 ## 更新
 
-在 opencode 中运行 `/dag-template-update` 命令（下载 zip 归档、预演对比、备份后合并，无需 git 环境）；或手动拉取：
+模板更新有三条通道，内容同源：
+
+1. **随发布自动更新（零动作）**：每次主仓库发布时，本仓库最新快照会编译进二进制内置模板（见"注意"节）。只装单体的用户由此始终持有发布时点的模板。
+2. **opencode 内更新**：运行 `/dag-template-update` 命令（下载 zip 归档、预演对比、备份后合并，无需 git 环境）。
+3. **手动拉取**（适用于 clone 过本仓库的用户）：
 
 ```sh
 git -C ~/.config/opencode/workflows pull
 ```
+
+作用域优先级为 项目级 > 全局 > 内置：全局更新后，同名项目级覆盖仍生效。
 
 ## 作用域
 
@@ -108,3 +114,5 @@ git -C ~/.config/opencode/workflows pull
 - `dag.jsonc`、`dcp.jsonc` 等 opencode 自身配置**不**在本仓库，留在配置目录本地管理。
 - 每次发布主仓库时，`release-fork` workflow 会把本仓库最新模板打包为 `dag-templates.tar.gz` release 资产，并嵌入二进制内置模板。
 - 主仓库 `.opencode/workflows/` 不再维护模板文件，本仓库是唯一权威源。
+- **`runtime-compat.json` 钉住配套主仓库运行时 SHA**：模板用到的能力必须先在运行时落地并发版，再把此处 bump 到对应合并 SHA；CI 模板校验会依据该契约把关。
+- **模板目录受 CI 严格校验**（`script/validate-route-catalog.ts`）：必须恰好为 7 域 × full/lite + 已声明的跨域路线。新增、删除或改名模板时必须同步修改校验脚本与测试 fixture，否则 CI 拒绝合并。
