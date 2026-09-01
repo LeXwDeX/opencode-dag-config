@@ -20,6 +20,11 @@ const expected = domains
 const crossDomainRoutes = ["release-route.yaml", "ultra-flow-route.yaml"]
 const catalog = [...expected, ...crossDomainRoutes].sort()
 const routeNames = catalog.map((file) => path.basename(file, ".yaml"))
+// The compatible runtime gate (runtime-compat.json, commit b48dce46) rejects
+// any node whose worker_type is outside its builtin agent catalog
+// (build, plan, general, explore); the portable profile skips the catalog when
+// absent, so this check closes the gap config-side.
+const compatibleWorkerTypes = ["explore", "build", "plan", "general"]
 const files = (await fs.readdir(root))
   // Hidden dotfiles are delivery tooling (e.g. the SpecGit `.specgit.yaml`
   // binding), never route templates; the catalog inventory is over visible files.
@@ -43,6 +48,25 @@ for (const filename of catalog) {
   if (parsed.config.name !== name)
     fail(`${filename} config.name must equal ${name}`)
   if (name.endsWith("-lite")) validateLiteRoute(filename, parsed.config)
+  validateWorkerTypes(filename, parsed.config)
+}
+
+function validateWorkerTypes(
+  filename: string,
+  config: Record<string, unknown>,
+) {
+  const workers = [
+    ...(Array.isArray(config.nodes) ? config.nodes : []),
+    ...(Array.isArray(config.blocks) ? config.blocks : []),
+  ].filter(isRecord)
+  for (const worker of workers) {
+    if (worker.worker_type === undefined) continue
+    const workerType = String(worker.worker_type)
+    if (compatibleWorkerTypes.includes(workerType)) continue
+    fail(
+      `${filename} node ${worker.id} worker type "${workerType}" is not in the compatible runtime agent catalog (${compatibleWorkerTypes.join(", ")})`,
+    )
+  }
 }
 
 console.log(

@@ -98,6 +98,20 @@ describe("route catalog guardrails", () => {
     expect(result.exitCode).toBe(1)
     expect(result.stderr).toContain("Route catalog must contain exactly")
   })
+
+  test("rejects a worker_type outside the compatible runtime agent catalog", async () => {
+    await rewrite(
+      "release-route.yaml",
+      'name: "verify the release landed"\n      worker_type: general',
+      'name: "verify the release landed"\n      worker_type: verify',
+    )
+
+    const result = await validate()
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain(
+      "not in the compatible runtime agent catalog",
+    )
+  })
 })
 
 async function rewrite(file: string, before: string, after: string) {
