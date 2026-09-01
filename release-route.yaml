@@ -75,7 +75,7 @@ config:
 
     - id: release-verify
       name: "verify the release landed"
-      worker_type: verify
+      worker_type: general
       depends_on: [release-execute]
       prompt_template:
         inline: >-
