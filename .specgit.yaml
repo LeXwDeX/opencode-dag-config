@@ -1,8 +1,10 @@
 version: 1
-delivery: specgit-harness
+delivery: release-route-worker
 context:
   kind: branch
-  branch: chore/17-specgit-harness
+  branch: fix/22-release-route-worker
 issues:
-  - 17
-pr: 21
+  - 22
+issueKinds:
+  - issue: 22
+    kind: kind::fix
