@@ -2,7 +2,7 @@ version: 1
 delivery: specgit-harness
 context:
   kind: branch
-  branch: feat/17-specgit-harness
+  branch: chore/specgit-harness
 issues:
   - 17
-pr: 18
+pr: 19
