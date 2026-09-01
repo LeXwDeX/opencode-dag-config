@@ -21,6 +21,9 @@ const crossDomainRoutes = ["release-route.yaml", "ultra-flow-route.yaml"]
 const catalog = [...expected, ...crossDomainRoutes].sort()
 const routeNames = catalog.map((file) => path.basename(file, ".yaml"))
 const files = (await fs.readdir(root))
+  // Hidden dotfiles are delivery tooling (e.g. the SpecGit `.specgit.yaml`
+  // binding), never route templates; the catalog inventory is over visible files.
+  .filter((file) => !file.startsWith("."))
   .filter((file) => /\.ya?ml$/i.test(file))
   .sort()
 
