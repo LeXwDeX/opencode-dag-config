@@ -1,0 +1,4 @@
+# >>> specgit: local delivery assets (managed by specgit init) >>>
+/.specgit.yaml
+/spec_git/
+# <<< specgit: local delivery assets (managed by specgit init) <<<

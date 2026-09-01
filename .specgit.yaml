@@ -1,0 +1,8 @@
+version: 1
+delivery: specgit-harness
+context:
+  kind: branch
+  branch: chore/17-specgit-harness
+issues:
+  - 17
+pr: 21

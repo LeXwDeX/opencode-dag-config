@@ -80,6 +80,24 @@ describe("route catalog guardrails", () => {
       "must not select another route or control action inside a child block",
     )
   })
+
+  test("ignores hidden delivery dotfiles when checking the catalog", async () => {
+    await Bun.write(join(fixture, ".specgit.yaml"), "version: 1\n")
+
+    const result = await validate()
+    expect(result.exitCode).toBe(0)
+  })
+
+  test("still rejects a visible yaml outside the catalog", async () => {
+    await Bun.write(
+      join(fixture, "extra-route.yaml"),
+      "config:\n  name: extra-route\n",
+    )
+
+    const result = await validate()
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("Route catalog must contain exactly")
+  })
 })
 
 async function rewrite(file: string, before: string, after: string) {
