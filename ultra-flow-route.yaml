@@ -3,13 +3,14 @@
 # release mechanics, and starts the graph. Checkpoints are direction gates:
 # verdict continue lets the flow run on untouched; verdict replan wakes the
 # parent, which adds correction nodes (findings as input, max 3 back-edges,
-# one decision point after the third).
+# one decision point after the third). Stage 3 is plan-driven: its plan node
+# returns work packages and the development writer fans out over them.
 title: "Ultra flow: exploration → design → development → acceptance → release → summary with checkpoints"
 config:
   name: ultra-flow-route
   max_concurrency: 4
   max_node_replan_attempts: 3
-  max_total_nodes: 26
+  max_total_nodes: 32
   node_defaults:
     worker_config:
       timeout_ms: 1800000
@@ -117,18 +118,70 @@ config:
           of hard defects; otherwise replan with findings and target stage.
           Submit exactly the schema.
 
-    - id: stage-development
-      name: "stage 3: project development"
-      worker_type: build
+    - id: stage-development-plan
+      name: "stage 3a: development work packages"
+      worker_type: plan
       depends_on: [cp-design-decision]
       condition: cp-design-decision.output.verdict == "continue"
+      output_schema:
+        type: object
+        properties:
+          summary:
+            type: string
+          packages:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                instruction:
+                  type: string
+                write_set:
+                  type: array
+                  items:
+                    type: string
+              required: [id, instruction, write_set]
+        required: [summary, packages]
       prompt_template:
         inline: >-
-          Development stage for the workflow objective. Follow the project-development
-          discipline retargeted by the parent: disjoint write sets, a failing
-          behavior check at the public seam before the smallest change that
-          passes it, vertical slices, and repository gates bound to the exact
-          HEAD fingerprint. Stop on ownership or interface drift and report it.
+          Development planning for the workflow objective. From the confirmed
+          design, split the implementation into work packages; each package
+          becomes one writer running concurrently in the same workspace. Split
+          only where the work is genuinely independent and return a single
+          package when it is not. Give each package a short id (letters,
+          numbers, hyphens, underscores), a self-contained instruction, and its
+          write_set of repository-relative files or directories. Write sets
+          must be triple-disjoint: source files, generated artifacts, and
+          lockfiles never overlap, and no package may trigger a shared build.
+          Keep generated-artifact or delivery wiring in its own package. Do not
+          implement.
+
+    - id: stage-development
+      name: "stage 3b: project development"
+      worker_type: build
+      depends_on: [stage-development-plan]
+      fan_out: stage-development-plan
+      output_schema:
+        type: object
+        properties:
+          summary:
+            type: string
+          changed_files:
+            type: array
+            items:
+              type: string
+          fingerprint:
+            type: string
+        required: [summary, changed_files, fingerprint]
+      prompt_template:
+        inline: >-
+          Development stage for the workflow objective. Implement only the
+          assigned work package and its write set: a failing behavior check at
+          the public seam before the smallest change that passes it, and
+          focused repository checks. Stop on ownership or interface drift and
+          report it. Submit the changed-file list and a stable fingerprint of
+          the actual implementation state.
 
     - id: cp-after-development
       name: "checkpoint: development → acceptance direction"
