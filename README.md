@@ -26,7 +26,7 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 
 | 路线                  | 用途                                                                         |
 | --------------------- | ---------------------------------------------------------------------------- |
-| `ultra-flow-route.yaml` | 六积木（探索 → 设计 → 开发 → 验收 → 发布 → 汇总）+ 五道分级检查点（轻量方向判定 ×3、独立取证三件套 ×2）。检查点 verdict 为 `continue`/`replan`：continue 不扰流程，replan 唤醒父会话做 additive 重规划（findings 注入、回环 ≤3）。发布积木可由父对话在重定向时删除 |
+| `ultra-flow-route.yaml` | 六积木（探索 → 设计 → 开发（计划驱动并行切片） → 验收 → 发布 → 汇总）+ 五道分级检查点（轻量方向判定 ×3、独立取证三件套 ×2）。检查点 verdict 为 `continue`/`replan`：continue 不扰流程，replan 唤醒父会话做 additive 重规划（findings 注入、回环 ≤3）。发布积木可由父对话在重定向时删除 |
 | `release-route.yaml`    | 发布装配：机制探测 → 版本推导（latest tag + commit 类型）→ 人工门（默认 hold，父会话注入确认后才 publish）→ 发布执行 → 验证 |
 
 ## 积木式路线
@@ -34,7 +34,14 @@ opencode DAG 编排的参考模板配置仓库（唯一权威源）。
 新路线用 `config.objective + config.blocks` 组合以下原语：
 `explore`、`plan`、`prototype`、`debug`、`coding`、`verify`、`review`、
 `synthesize`。运行时会先把积木展开成普通 DAG 节点，再沿用现有校验、
-持久化、调度和恢复机制。需要自定义绑定、条件、输出 Schema 或深度 diff
+持久化、调度和恢复机制。
+
+实现切片的数量由计划决定：`coding` 积木声明 `fan_out: <plan 积木 id>` 后，该
+计划输出带 `id`、`instruction`、`write_set` 的工作包；writer 就绪时，两个及以上
+互不重叠的工作包会并行运行，writer 自身的 ID 变成它们的聚合器，下游 verify /
+review 绑定不变。只有一个包时按原样运行；写集重叠等无法证明安全的形态会退回
+串行并在 prompt 中说明原因。`project-development-full` 与 `ultra-flow-route`
+的开发阶段采用这一机制（运行时 1.0.84 起）。需要自定义绑定、条件、输出 Schema 或深度 diff
 审查元数据时，现有 `nodes` 模板仍是低层逃生口。
 
 每个积木都由运行时生命周期契约和本仓库的专项 `instruction` 共同定义，
